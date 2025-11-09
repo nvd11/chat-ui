@@ -7,8 +7,7 @@ import { customElement, state } from 'lit/decorators.js';
 // Import the Shoelace components we are going to use in this component's template.
 // This is how you make other web components available to use.
 import '@shoelace-style/shoelace/dist/components/input/input.js';
-import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
-import '@shoelace-style/shoelace/dist/components/icon/icon.js';
+import '@shoelace-style/shoelace/dist/components/button/button.js';
 
 @customElement('chat-input')
 export class ChatInput extends LitElement {
@@ -31,6 +30,14 @@ export class ChatInput extends LitElement {
        to customize its appearance. */
     sl-input::part(base) {
       border-radius: 0;
+    }
+    sl-button::part(base) {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    sl-input::part(input) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
     }
   `;
 
@@ -75,20 +82,20 @@ export class ChatInput extends LitElement {
   // The render method defines the component's HTML structure.
   render() {
     return html`
-      <sl-input
-        placeholder="Type a message..."
-        .value=${this._inputValue}
-        @sl-input=${this._handleInput}
-        @keydown=${this._handleKeydown}
-        clearable
-      >
-        <sl-icon-button
-          name="send"
-          label="Send"
-          slot="suffix"
+      <div style="display: flex;">
+        <sl-input
+          style="flex-grow: 1;"
+          placeholder="Type a message..."
+          .value=${this._inputValue}
+          @sl-input=${this._handleInput}
+          @keydown=${this._handleKeydown}
+          clearable
+        ></sl-input>
+        <sl-button
+          variant="primary"
           @click=${this._handleSubmit}
-        ></sl-icon-button>
-      </sl-input>
+        >Send</sl-button>
+      </div>
     `;
   }
 }

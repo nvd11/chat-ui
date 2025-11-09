@@ -2,7 +2,6 @@
 import { LitElement, html, css } from 'lit';
 // Import decorators for defining custom elements and reactive properties.
 import { customElement, state } from 'lit/decorators.js';
-// Import the setBasePath utility from Shoelace to configure asset paths.
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 
 // Import Shoelace components that will be used in this component's template.
@@ -11,16 +10,20 @@ import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
 // Import the light theme for Shoelace. This will be applied globally.
 import '@shoelace-style/shoelace/dist/themes/light.css';
 
-// Set the base path for all Shoelace assets (like icons).
-// This tells Shoelace where to load its assets from.
-// The path is relative to the root of the application.
-setBasePath('node_modules/@shoelace-style/shoelace/dist/');
+// Set the base path for Shoelace assets.
+// In development, we point to the node_modules folder.
+// In production, we point to the absolute path where the assets will be served from.
+const basePath = import.meta.env.DEV ? 'node_modules/@shoelace-style/shoelace/dist' : '/chat/assets';
+setBasePath(basePath);
 
 // Import our child components. This registers them and makes them available
 // to be used in this component's template.
 import './components/chat-window';
 import './components/chat-input';
 import './components/conversation-list';
+
+// Import our new API function.
+import { streamChat } from './services/api';
 
 // Define TypeScript interfaces for our data structures to ensure type safety.
 interface Message {
@@ -110,19 +113,66 @@ export class ChatApp extends LitElement {
   }
 
   // Event handler for the 'message-sent' event dispatched by <chat-input>.
-  private _handleMessageSent(e: CustomEvent) {
-    const newMessage: Message = {
+  private async _handleMessageSent(e: CustomEvent) {
+    console.log('Received message-sent event:', e.detail.content);
+
+    const userMessage: Message = {
       role: 'user',
       content: e.detail.content,
     };
+
+    // Find the index of the current conversation
+    const convoIndex = this._conversations.findIndex(
+      (c) => c.id === this._selectedConversationId
+    );
+    if (convoIndex === -1) return;
+
+    // Create a new messages array with the user's message added.
+    const updatedMessages = [...this._conversations[convoIndex].messages, userMessage];
     
-    const currentConvo = this._selectedConversation;
-    if (currentConvo) {
-      // Add the new message to the messages array of the current conversation.
-      // It's important to create new array references (...) to ensure Lit's reactive system
-      // detects the change. Directly pushing to the array might not trigger an update.
-      currentConvo.messages = [...currentConvo.messages, newMessage];
-      this._conversations = [...this._conversations]; 
+    // Create a new conversations array with the updated messages.
+    // This ensures Lit detects the change.
+    this._conversations = this._conversations.map((convo, index) => 
+      index === convoIndex ? { ...convo, messages: updatedMessages } : convo
+    );
+    
+    // Add a placeholder for the assistant's response
+    const assistantMessagePlaceholder: Message = { role: 'assistant', content: '' };
+    this._conversations = this._conversations.map((convo, index) => 
+      index === convoIndex ? { ...convo, messages: [...convo.messages, assistantMessagePlaceholder] } : convo
+    );
+
+    try {
+      console.log('Starting to stream chat...');
+      for await (const chunk of streamChat(userMessage.content)) {
+        console.log('Received chunk:', chunk);
+        
+        // To update the streaming message, we need to find it and update its content
+        // immutably.
+        this._conversations = this._conversations.map((convo, index) => {
+          if (index === convoIndex) {
+            // Get the last message (our placeholder)
+            const lastMessage = convo.messages[convo.messages.length - 1];
+            // Create a new message object with the appended chunk
+            const updatedAssistantMessage = { ...lastMessage, content: lastMessage.content + chunk };
+            // Return a new messages array with the last message replaced
+            return { ...convo, messages: [...convo.messages.slice(0, -1), updatedAssistantMessage] };
+          }
+          return convo;
+        });
+      }
+      console.log('Streaming finished.');
+    } catch (error) {
+      console.error('Error during streaming:', error);
+      // Handle error by updating the placeholder message
+      this._conversations = this._conversations.map((convo, index) => {
+        if (index === convoIndex) {
+          const lastMessage = convo.messages[convo.messages.length - 1];
+          const updatedAssistantMessage = { ...lastMessage, content: 'Error: Could not get a response.' };
+          return { ...convo, messages: [...convo.messages.slice(0, -1), updatedAssistantMessage] };
+        }
+        return convo;
+      });
     }
   }
 
