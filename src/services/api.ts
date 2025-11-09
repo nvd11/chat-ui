@@ -14,7 +14,7 @@ interface Message {
  */
 export async function* streamChat(message: string): AsyncIterable<string> {
   // The URL of your backend API.
-  const API_URL = 'http://www.jpgcp.cloud/chat-api-svc/api/v1/chat';
+  const API_URL = 'http://www.jpgcp.cloud/py-chat-deepseek-svc/api/v1/chat';
 
   try {
     // Use the fetch API to make a POST request.
@@ -82,3 +82,7 @@ export async function* streamChat(message: string): AsyncIterable<string> {
     yield 'Sorry, I am having trouble connecting to the server.';
   }
 }
+
+// This is a dummy export to prevent the 'Message' interface from being flagged as unused.
+// We can remove this once we use the Message interface for more complex data handling.
+export type { Message };
