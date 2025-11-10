@@ -3,6 +3,9 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   base: 'chat/',
+  server: {
+    host: true
+  },
   plugins: [
     viteStaticCopy({
       targets: [

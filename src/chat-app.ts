@@ -6,6 +6,8 @@ import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.j
 
 // Import Shoelace components that will be used in this component's template.
 import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
+import '@shoelace-style/shoelace/dist/components/drawer/drawer.js';
+import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
 
 // Import the light theme for Shoelace. This will be applied globally.
 import '@shoelace-style/shoelace/dist/themes/light.css';
@@ -68,6 +70,10 @@ export class ChatApp extends LitElement {
   @state()
   private _selectedConversationId = '1';
 
+  // This state controls the visibility of the drawer on mobile.
+  @state()
+  private _isDrawerOpen = false;
+
   // Scoped CSS for the component.
   static styles = css`
     :host {
@@ -78,20 +84,48 @@ export class ChatApp extends LitElement {
       padding: 16px;
       box-sizing: border-box;
     }
-    sl-split-panel {
+    .desktop-layout {
+      display: none; /* Hidden on mobile by default */
+    }
+    .mobile-layout {
+      display: flex; /* Shown on mobile by default */
+      flex-direction: column;
       height: 100%;
       max-width: 1200px;
-      margin: 0 auto; /* Center the panel horizontally */
+      margin: 0 auto;
+      background-color: white;
       border: 1px solid #dcdcdc;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      /* CSS Custom Properties to style the Shoelace split panel */
-      --min: 200px; /* Minimum width of the start panel */
-      --max: 400px; /* Maximum width of the start panel */
+    }
+    .mobile-header {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-bottom: 1px solid #e0e0e0;
     }
     .main-content {
       display: flex;
       flex-direction: column;
       height: 100%;
+      flex-grow: 1;
+    }
+    /* Media query for desktop screens */
+    @media (min-width: 768px) {
+      .desktop-layout {
+        display: block; /* Show split panel on desktop */
+        height: 100%;
+      }
+      .mobile-layout {
+        display: none; /* Hide mobile layout on desktop */
+      }
+      sl-split-panel {
+        height: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        border: 1px solid #dcdcdc;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        --min: 200px;
+        --max: 400px;
+      }
     }
     chat-window {
       flex-grow: 1; /* Make the chat window fill the available space */
@@ -108,8 +142,9 @@ export class ChatApp extends LitElement {
 
   // Event handler for the 'conversation-selected' event dispatched by <conversation-list>.
   private _handleConversationSelected(e: CustomEvent) {
-    // Update the state with the new selected ID, which will trigger a re-render.
     this._selectedConversationId = e.detail.id;
+    // Close the drawer after a selection is made on mobile.
+    this._isDrawerOpen = false;
   }
 
   // Event handler for the 'message-sent' event dispatched by <chat-input>.
@@ -180,22 +215,51 @@ export class ChatApp extends LitElement {
   render() {
     const selectedConvo = this._selectedConversation;
 
+    const conversationList = html`
+      <conversation-list
+        .conversations=${this._conversations.map(c => ({id: c.id, name: c.name}))}
+        .selectedConversationId=${this._selectedConversationId}
+        @conversation-selected=${this._handleConversationSelected}
+      ></conversation-list>
+    `;
+
+    const mainContent = html`
+      <div class="main-content">
+        <chat-window .messages=${selectedConvo?.messages || []}></chat-window>
+        <chat-input @message-sent=${this._handleMessageSent}></chat-input>
+      </div>
+    `;
+
     return html`
-      <sl-split-panel position="25">
-        {/* The 'start' slot is for the left/top panel of the split panel. */}
-        <conversation-list
-          slot="start"
-          .conversations=${this._conversations.map(c => ({id: c.id, name: c.name}))}
-          .selectedConversationId=${this._selectedConversationId}
-          @conversation-selected=${this._handleConversationSelected}
-        ></conversation-list>
-        
-        {/* The 'end' slot is for the right/bottom panel. */}
-        <div slot="end" class="main-content">
-          <chat-window .messages=${selectedConvo?.messages || []}></chat-window>
-          <chat-input @message-sent=${this._handleMessageSent}></chat-input>
+      <!-- Desktop Layout -->
+      <div class="desktop-layout">
+        <sl-split-panel position="25">
+          <div slot="start">${conversationList}</div>
+          <div slot="end">${mainContent}</div>
+        </sl-split-panel>
+      </div>
+
+      <!-- Mobile Layout -->
+      <div class="mobile-layout">
+        <div class="mobile-header">
+          <sl-icon-button 
+            name="list" 
+            label="Conversations"
+            @click=${() => this._isDrawerOpen = true}
+          ></sl-icon-button>
+          <h3>${selectedConvo?.name || 'Chat'}</h3>
         </div>
-      </sl-split-panel>
+        ${mainContent}
+      </div>
+
+      <sl-drawer 
+        label="Conversations" 
+        placement="start" 
+        .open=${this._isDrawerOpen}
+        @sl-hide=${() => this._isDrawerOpen = false}
+      >
+        ${conversationList}
+      </sl-drawer>
     `;
   }
 }

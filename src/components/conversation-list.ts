@@ -43,16 +43,13 @@ export class ConversationList extends LitElement {
     sl-menu {
       flex-grow: 1;
     }
-    sl-menu-item[data-selected] {
-      background-color: var(--sl-color-primary-100);
-      color: var(--sl-color-primary-700);
-    }
   `;
 
-  private _handleConversationClick(id: string) {
+  private _handleConversationSelect(e: CustomEvent) {
+    const selectedItem = e.detail.item;
     this.dispatchEvent(
       new CustomEvent('conversation-selected', {
-        detail: { id },
+        detail: { id: selectedItem.value },
         bubbles: true,
         composed: true,
       })
@@ -77,13 +74,10 @@ export class ConversationList extends LitElement {
         <sl-icon slot="prefix" name="plus-lg"></sl-icon>
         New Chat
       </sl-button>
-      <sl-menu>
+      <sl-menu .value=${this.selectedConversationId} @sl-select=${this._handleConversationSelect}>
         ${this.conversations.map(
           (convo) => html`
-            <sl-menu-item
-              ?data-selected=${this.selectedConversationId === convo.id}
-              @click=${() => this._handleConversationClick(convo.id)}
-            >
+            <sl-menu-item .value=${convo.id}>
               ${convo.name}
             </sl-menu-item>
           `
