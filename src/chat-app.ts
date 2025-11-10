@@ -14,8 +14,8 @@ import '@shoelace-style/shoelace/dist/themes/light.css';
 
 // Set the base path for Shoelace assets.
 // In development, we point to the node_modules folder.
-// In production, we point to the absolute path where the assets will be served from.
-const basePath = import.meta.env.DEV ? 'node_modules/@shoelace-style/shoelace/dist' : '/chat/assets';
+// In production, we point to the new, local assets folder.
+const basePath = import.meta.env.DEV ? 'node_modules/@shoelace-style/shoelace/dist' : '/chat/shoelace';
 setBasePath(basePath);
 
 // Import our child components. This registers them and makes them available
