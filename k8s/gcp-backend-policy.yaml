@@ -1,0 +1,17 @@
+                                                                                                                                                                                # This is the correct way to configure IAP for a GKE Gateway.
+# This policy targets the 'chat-ui-iap-service' and applies IAP to it.
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: iap-backend-policy
+spec:
+  default:
+    iap:
+      enabled: true
+      oauth2ClientSecret:
+        name: iap-oauth-credentials # References the K8s Secret
+      clientID: "912156613264-eaphf3lhji9jbp402e2qac050oiq1cdm.apps.googleusercontent.com" # The Client ID you provided
+  targetRef:
+    group: ""
+    kind: Service
+    name: chat-ui-iap-service # The Service to protect

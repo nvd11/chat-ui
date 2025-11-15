@@ -1,4 +1,5 @@
-# Service: Exposes the deployment pods internally within the cluster
+# Service: Exposes the deployment pods internally, WITHOUT IAP.
+# This service is intended for in-cluster communication.
 apiVersion: v1
 kind: Service
 metadata:

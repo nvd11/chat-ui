@@ -41,6 +41,19 @@ spec:
     - matches:
       - path:
           type: PathPrefix
+          value: /chat-iap
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /
+      backendRefs:
+        - name: chat-ui-iap-service
+          port: 80
+    - matches:
+      - path:
+          type: PathPrefix
           value: /pyapi
       filters:
       - type: URLRewrite
